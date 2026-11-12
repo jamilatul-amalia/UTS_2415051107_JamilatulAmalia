@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'app_keys.dart';
 import 'config/supabase_config.dart';
 import 'models/course_state.dart';
 import 'pages/login_page.dart';
@@ -19,6 +20,17 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     publishableKey: SupabaseConfig.anonKey,
   );
+
+  // Mendengarkan perubahan status autentikasi (otomatis redirect jika signedOut)
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    debugPrint('Auth event: ${data.event}');
+    if (data.event == AuthChangeEvent.signedOut) {
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  });
 
   final repository = CourseRepository(CourseSupabaseService());
 
@@ -41,6 +53,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Course Data Manager',
       theme: ThemeData(primarySwatch: Colors.blue),
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: messengerKey,
       home: isLoggedIn ? const ResponsiveShell() : const LoginPage(),
     );
   }
