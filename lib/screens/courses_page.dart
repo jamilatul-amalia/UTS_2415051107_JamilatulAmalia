@@ -7,10 +7,25 @@ import '../models/course.dart';
 import '../models/course_state.dart';
 import '../widgets/error_view.dart';
 import 'add_course_page.dart';
+import 'course_detail_page.dart';
 import 'edit_course_page.dart';
 
-class CoursesPage extends StatelessWidget {
+class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
+
+  @override
+  State<CoursesPage> createState() => _CoursesPageState();
+}
+
+class _CoursesPageState extends State<CoursesPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _confirmDelete(BuildContext context, Course course) async {
     final state = context.read<CourseState>();
@@ -58,6 +73,12 @@ class CoursesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<CourseState>();
 
+    final filteredCourses = state.courses.where((course) {
+      final q = _searchQuery.toLowerCase();
+      return course.title.toLowerCase().contains(q) ||
+          course.code.toLowerCase().contains(q);
+    }).toList();
+
     Widget bodyContent;
 
     if (state.isLoading) {
@@ -70,48 +91,110 @@ class CoursesPage extends StatelessWidget {
     } else if (state.courses.isEmpty) {
       bodyContent = const Center(child: Text('Data course belum tersedia'));
     } else {
-      bodyContent = ListView.builder(
-        itemCount: state.courses.length,
-        itemBuilder: (context, index) {
-          final course = state.courses[index];
-          return ListTile(
-            title: Text(course.title),
-            subtitle: Text('${course.code} • ${course.credits} SKS'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditCoursePage(course: course),
-                      ),
-                    );
-                  },
+      bodyContent = Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: InputDecoration(
+                hintText: 'Cari nama atau kode mata kuliah...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, course),
-                ),
-                IconButton(
-                  icon: Icon(
-                    state.isFavorite(course.code)
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                    color: state.isFavorite(course.code) ? Colors.red : null,
-                  ),
-                  onPressed: () => state.toggleFavorite(course.code),
-                ),
-              ],
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: filteredCourses.isEmpty
+                ? const Center(child: Text('Mata kuliah tidak ditemukan'))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: filteredCourses.length,
+                    itemBuilder: (context, index) {
+                      final course = filteredCourses[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: ListTile(
+                          title: Text(
+                            course.title,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle:
+                              Text('${course.code} • ${course.credits} SKS'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CourseDetailPage(
+                                    course: course,
+                                    isFavorite: state.isFavorite(course.code),
+                                ),
+                              ),
+                            );
+                          },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          EditCoursePage(course: course),
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _confirmDelete(context, course),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  state.isFavorite(course.code)
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: state.isFavorite(course.code)
+                                      ? Colors.red
+                                      : null,
+                                ),
+                                onPressed: () =>
+                                    state.toggleFavorite(course.code),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       );
     }
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Katalog Mata Kuliah'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
       body: bodyContent,
       floatingActionButton: FloatingActionButton(
         onPressed: () {

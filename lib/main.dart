@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
 import 'models/course_state.dart';
+import 'pages/login_page.dart';
 import 'repositories/course_repository.dart';
+import 'services/auth_service.dart';
 import 'services/course_supabase_service.dart';
 import 'widgets/responsive_shell.dart';
 
@@ -33,11 +35,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLoggedIn = AuthService.instance.isLoggedIn;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter UI Fundamentals',
+      title: 'Course Data Manager',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ResponsiveShell(),
+      home: isLoggedIn ? const ResponsiveShell() : const LoginPage(),
     );
   }
 }
