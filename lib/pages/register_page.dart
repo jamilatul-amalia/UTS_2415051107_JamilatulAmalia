@@ -13,13 +13,16 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _nameC = TextEditingController();
   final _emailC = TextEditingController();
   final _passC = TextEditingController();
   final _confirmC = TextEditingController();
+  String _role = 'seeker';
   bool _loading = false;
 
   @override
   void dispose() {
+    _nameC.dispose();
     _emailC.dispose();
     _passC.dispose();
     _confirmC.dispose();
@@ -38,6 +41,8 @@ class _RegisterPageState extends State<RegisterPage> {
       final res = await AuthService.instance.register(
         email: _emailC.text.trim(),
         password: _passC.text,
+        name: _nameC.text.trim(),
+        role: _role,
       );
       if (!mounted) return;
 
@@ -70,6 +75,13 @@ class _RegisterPageState extends State<RegisterPage> {
           child: ListView(
             children: [
               TextFormField(
+                controller: _nameC,
+                decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
                 controller: _emailC,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(labelText: 'Email'),
@@ -78,6 +90,22 @@ class _RegisterPageState extends State<RegisterPage> {
                   if (!v.contains('@')) return 'Format email tidak valid';
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _role,
+                decoration: const InputDecoration(labelText: 'Daftar sebagai'),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'seeker',
+                    child: Text('Mahasiswa (seeker)'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'owner',
+                    child: Text('Dosen / Pengelola (owner)'),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _role = v ?? 'seeker'),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -94,8 +122,10 @@ class _RegisterPageState extends State<RegisterPage> {
               TextFormField(
                 controller: _confirmC,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Konfirmasi Password'),
-                validator: (v) => v != _passC.text ? 'Password tidak sama' : null,
+                decoration:
+                    const InputDecoration(labelText: 'Konfirmasi Password'),
+                validator: (v) =>
+                    v != _passC.text ? 'Password tidak sama' : null,
               ),
               const SizedBox(height: 24),
               FilledButton(
