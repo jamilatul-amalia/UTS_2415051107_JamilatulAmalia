@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../models/course_state.dart';
+import '../services/profile_service.dart';
 import '../widgets/error_view.dart';
+import '../widgets/role_guard.dart';
 import 'add_course_page.dart';
 import 'course_detail_page.dart';
 import 'edit_course_page.dart';
@@ -20,6 +22,23 @@ class CoursesPage extends StatefulWidget {
 class _CoursesPageState extends State<CoursesPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _userRole = 'seeker';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final profile = await ProfileService().getMyProfile();
+    if (!mounted) return;
+    if (profile != null) {
+      setState(() {
+        _userRole = profile.role;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -139,8 +158,8 @@ class _CoursesPageState extends State<CoursesPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CourseDetailPage(
-                                    course: course,
-                                    isFavorite: state.isFavorite(course.code),
+                                  course: course,
+                                  isFavorite: state.isFavorite(course.code),
                                 ),
                               ),
                             );
@@ -148,23 +167,33 @@ class _CoursesPageState extends State<CoursesPage> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          EditCoursePage(course: course),
+                              RoleGuard(
+                                role: _userRole,
+                                allowed: const ['owner', 'admin'],
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit,
+                                          color: Colors.blue),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                EditCoursePage(course: course),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
-                              ),
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _confirmDelete(context, course),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () =>
+                                          _confirmDelete(context, course),
+                                    ),
+                                  ],
+                                ),
                               ),
                               IconButton(
                                 icon: Icon(
@@ -191,19 +220,23 @@ class _CoursesPageState extends State<CoursesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Katalog Mata Kuliah'),
+        title: Text('Katalog Mata Kuliah ($_userRole)'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
       body: bodyContent,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddCoursePage()),
-          );
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: RoleGuard(
+        role: _userRole,
+        allowed: const ['owner', 'admin'],
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddCoursePage()),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
