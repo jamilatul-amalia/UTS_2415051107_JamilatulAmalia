@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/course_state.dart';
 import '../pages/login_page.dart';
+import '../services/notification_service.dart';
 import '../services/auth_service.dart';
 import 'course_detail_page.dart';
 
@@ -18,6 +19,12 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.instance.requestPermission();
+  }
 
   @override
   void dispose() {
