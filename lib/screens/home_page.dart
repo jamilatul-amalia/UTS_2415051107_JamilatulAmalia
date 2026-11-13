@@ -23,7 +23,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    NotificationService.instance.requestPermission();
+    NotificationService.instance.requestPermission().then((_) {
+      NotificationService.instance.getToken();
+    });
   }
 
   @override
@@ -268,8 +270,9 @@ class _HomePageState extends State<HomePage> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => CourseDetailPage(
-                                              course: course,
-                                              isFavorite: state.isFavorite(course.code),
+                                            course: course,
+                                            isFavorite:
+                                                state.isFavorite(course.code),
                                           ),
                                         ),
                                       );
